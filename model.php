@@ -27,7 +27,7 @@ use modules\core\classes as c;
 class model extends c\model {
         
     public function get_tables(){
-        return array('gneiss_keys','gneiss_modules','gneiss_events');
+        return array('gneiss_keys','gneiss_modules','gneiss_events','gneiss_config','gneiss_module_config');
     }
     
     // Keys
@@ -67,6 +67,9 @@ class model extends c\model {
     // 1.0
     
     public function get_next_sort_value(){
+        if(!$this->table_exists('gneiss_modules')){
+            return 1;
+        }
         $query  = "SELECT MAX(`order`) as nnext FROM `gneiss_modules`;";
         $result = $this->get_mysqli()->query($query);
         $r      = $result->fetch_object();
@@ -76,6 +79,9 @@ class model extends c\model {
     }
     
     public function get_all_modules(){
+        if(!$this->table_exists('gneiss_modules')){
+            return array();
+        }
         $query  = "SELECT `id`, `module`, `order` FROM `gneiss_modules`;";
         $result = $this->get_mysqli()->query($query);
         $all    = array();
@@ -88,6 +94,9 @@ class model extends c\model {
     }
     
     public function add_module_to_index($module){
+        if(!$this->table_exists('gneiss_modules')){
+            return FALSE;
+        }
         $order  = $this->get_next_sort_value();
         $module = $this->get_mysqli()->real_escape_string($module);
         $query  = "INSERT INTO `gneiss_modules` VALUES(NULL,'{$module}','{$order}');";
@@ -95,6 +104,9 @@ class model extends c\model {
     }
     
     public function add_listener($event,$module,$sub){
+        if(!$this->table_exists('gneiss_events')){
+            return FALSE;
+        }
         $event  = $this->get_mysqli()->real_escape_string($event);
         $module = $this->get_mysqli()->real_escape_string($module);
         $sub    = $this->get_mysqli()->real_escape_string($sub);
@@ -103,6 +115,9 @@ class model extends c\model {
     }
     
     public function remove_listener($event,$module,$sub){
+        if(!$this->table_exists('gneiss_events')){
+            return FALSE;
+        }
         $event  = $this->get_mysqli()->real_escape_string($event);
         $module = $this->get_mysqli()->real_escape_string($module);
         $sub    = $this->get_mysqli()->real_escape_string($sub);
@@ -114,6 +129,9 @@ class model extends c\model {
     }
     
     public function set_config($var,$val){
+        if(!$this->table_exists('gneiss_config')){
+            return FALSE;
+        }
         $var    = $this->get_mysqli()->real_escape_string($var);
         $val    = $this->get_mysqli()->real_escape_string($val);
         $query  = "INSERT INTO `gneiss_config` VALUES('{$var}','{$val}');";
@@ -121,6 +139,9 @@ class model extends c\model {
     }
     
     public function set_module_config($module,$var,$val){
+        if(!$this->table_exists('gneiss_module_config')){
+            return FALSE;
+        }
         $module = $this->get_mysqli()->real_escape_string($module);
         $var    = $this->get_mysqli()->real_escape_string($var);
         $val    = $this->get_mysqli()->real_escape_string($val);

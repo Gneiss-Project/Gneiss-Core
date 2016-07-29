@@ -117,9 +117,18 @@ class factory extends c\module_lib {
         return $error;
     }
     
+    private function conditional_db_load_CONF(){
+        $loaded_CONF = array();
+        
+        return $loaded_CONF;
+    }
+    
     private function load_CONF(){
         if(!is_array($this->CONF)){
             include $this->get_file_path() . '/config.php';
+            if(!is_array($CONF)){
+                $CONF=array();
+            }
             $settings_path = $this->get_file_path() . '/settings/';
             if(is_array($CONF['settings']) && file_exists($settings_path)){
                 $CONF['settings'][] = 'development';
@@ -130,7 +139,7 @@ class factory extends c\module_lib {
                     }
                 }
             }
-            $this->CONF = $CONF;
+            $this->CONF = array_merge($this->conditional_db_load_CONF(), $CONF);
         }
     }
     /**
@@ -164,7 +173,7 @@ class factory extends c\module_lib {
      * @param array $data
      * @return \modules\core\error 
      */
-    public function &new_error($message,$code=0,$data=array()){
+    public function new_error($message,$code=0,$data=array()){
         $error = new error($message,$code,$data);
         $this->debug()->log("ERROR:{$code}:{$message}", $data);
         return $error;
