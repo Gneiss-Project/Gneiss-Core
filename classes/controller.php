@@ -19,6 +19,8 @@ use modules\core\interfaces as i;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  * 
+ * 21-July-2016 - view_set now chainable
+ * 
  * @author lordmatt
  */
 abstract class controller extends module_lib implements i\controller {
@@ -70,6 +72,7 @@ abstract class controller extends module_lib implements i\controller {
     
     public function view_set($var,$val){
         $this->view_data[$var]=$val;
+        return $this;
     }
 
     protected function register_view_part($event,$method){

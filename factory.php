@@ -120,6 +120,9 @@ class factory extends c\module_lib {
     private function load_CONF(){
         if(!is_array($this->CONF)){
             include $this->get_file_path() . '/config.php';
+            if(!is_array($CONF)){
+                $CONF=array();
+            }
             $settings_path = $this->get_file_path() . '/settings/';
             if(is_array($CONF['settings']) && file_exists($settings_path)){
                 $CONF['settings'][] = 'development';
@@ -129,8 +132,8 @@ class factory extends c\module_lib {
                         include $file;
                     }
                 }
-            }
             $this->CONF = $CONF;
+            }
         }
     }
     /**
@@ -153,9 +156,22 @@ class factory extends c\module_lib {
         if(isset($this->CONF[$var])){
             return $this->CONF[$var];
         }else{
+            $val = $this->module()->model()->get_config($var);
+            if($val!==FALSE){
+                $default = $val;
+            }
             $this->set_config($var, $default);
             return $this->CONF[$var];
         }
+    }
+    /**
+     * Returns FALSE if config not set or table not ready.
+     * @param string $module
+     * @param string $var
+     * @return mixed 
+     */
+    public function get_module_config($module,$var){
+        return $this->module()->model()->get_module_config($module,$var);
     }
     /**
      *
@@ -164,7 +180,7 @@ class factory extends c\module_lib {
      * @param array $data
      * @return \modules\core\error 
      */
-    public function &new_error($message,$code=0,$data=array()){
+    public function new_error($message,$code=0,$data=array()){
         $error = new error($message,$code,$data);
         $this->debug()->log("ERROR:{$code}:{$message}", $data);
         return $error;

@@ -34,6 +34,9 @@ class database {
     public function &get($n=0){
         if(!isset($this->DB[$n]) || !is_object($this->DB[$n])){
             $settings = core::get()->factory()->get_config('DB');
+            if(!is_array($settings)){
+                die('Database has no values');
+            }
             $DB = $settings[$n];
             $mysqli = new \mysqli($DB['host'], $DB['user'], $DB['password'], $DB['database']);
             if($mysqli===FALSE){

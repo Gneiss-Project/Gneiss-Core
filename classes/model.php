@@ -31,6 +31,42 @@ abstract class model {
     public function get_tables(){
         return array();
     }
+    
+    /**
+     * Takes a table name and returns true if it can bind the statment and find
+     * the table. Otherwise false.
+     * @param string $table
+     * @return boolean 
+     */
+    protected function table_exists($table){
+        $query="SELECT * FROM information_schema.TABLES WHERE TABLE_NAME = ?;";
+        if ($stmt = $this->get_mysqli()->prepare($query)) {
+            $stmt->bind_param("s", $table); //This is line 24.
+            $stmt->execute();            
+            $result = FALSE;
+            $stmt->store_result();
+            if($stmt->errno==0 && $stmt->num_rows>0){
+                $result = TRUE;
+            }
+            $stmt->close();
+            return $result;
+        }
+        #die('CANNOT PREPARE THAT '.$query);
+        return FALSE; //error
+    }
+    
+    /**
+     * Provides an array with tales as keys and boolean values for table status
+     * @return array 
+     */
+    public function get_tables_status(){
+        $t = array();
+        foreach($this->get_tables() as $table){
+            $t[$table]=$this->table_exists($table);
+        }
+        return $t;
+    }
+    
     /**
      * A short cut for updating a table. The array keys must be the feild names.
      * 
@@ -40,7 +76,7 @@ abstract class model {
      * @param array $values
      * @param string $table 
      */
-    public function update($values,$table,$id,$key='id'){
+    protected function update($values,$table,$id,$key='id'){
         if(!is_array($values)){
             return false;
         }

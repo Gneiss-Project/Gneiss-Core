@@ -21,6 +21,26 @@ use modules\core\classes as c;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @author lordmatt
+ * 
+ * 1.0.1 - changes URL to urlencode data elements
+ * 1.0.2 - commented the heck out of module_lib functions
+ * 1.0.3 - added module_exists method
+ * 1.1.0 - gave in to the inevitable and added an api_controller to classes
+ * 1.2.0 - added the pager object and made controller::view_set chainable
+ * 1.2.1 - moved pager to it's own module - pages
+ * 1.2.2 - URL Redirect seperated into more methods
+ * 1.2.3 - core::classes::model::update() made protected
+ *       - core::classes::model::table_exists() added to model
+ * 1.3.0 - Now uses optional tables for config
+ *       - core::classes::model::get_tables_status()
+ *       - designed for use with the setup module
+ *       - factory less assumptive about config files
+ * 1.3.1 - now assumes new format for key table
+ *       - purges old keys on new key and remove key
+ * 1.3.2 - factory now uses optional tables
+ *       - modules can now access module config
+ *       - core::classes::module::get_config($var)
+ *       - module base methods now have doc comments
  */
 class core implements i\module {
     
@@ -32,6 +52,10 @@ class core implements i\module {
         $this->factory()->get_config('self',$self);
         // Any system init actions
         $mapper =& $this->factory()->get_module_lib('core', 'mapper');
+        if($mapper instanceof error){
+            print_r($mapper);
+            die("fatal error");
+        }
         $mapper->map($data);
         $ar = array('data'=>&$data);
         $this->notify('request',$ar);
@@ -69,7 +93,7 @@ class core implements i\module {
         return 'The core of the Gneiss system. Does stuff to make it work.';
     }
     public static function meta_version(){
-        return '1.0.0';
+        return '1.3.2';
     }    
     public static function meta_uses(){
         return array();
@@ -103,7 +127,16 @@ class core implements i\module {
     // 0.7
     
     protected function getListeners($event){
-        return array();
+        try {
+            $l = $this->model()->get_listeners($event); // 1.3.1 went live
+            if($l===FALSE){
+                return array();
+            }
+            return $l;
+        } catch (\Exception $e) {
+            $this->debug()->log('Caught Exception in getListeners for '.$event, $e);
+            return array();
+        }
     }
     
     public function notify($event,&$data){
@@ -143,15 +176,26 @@ class core implements i\module {
             $url .= "{$specific}/";
         }
         #.
+        if(count($data)>0){
+            foreach($data as $d){
+                $d=urlencode($d);
+            }
+        }
+        
         $url .= implode('/', $data);
+        
+        $url = str_replace('-', '%2D', $url);// literal non space -'s
         $url = str_replace(' ', '-', $url);
         return $url;
     }
     
-    public function redirect($path=array(),$status=303,$headsentNoDie=false){
-        $path = implode('/', $path);
-        $path = str_replace(' ', '-', $path);
-        $url = $this->factory()->get_config('home','/') . $path;
+    /**
+     * Split from redirect 22-July-2016
+     * @param string $url
+     * @param string $status
+     * @param bool $headsentNoDie 
+     */
+    public function url_redirect($url,$status=303,$headsentNoDie=false){
         if(!headers_sent()){
             header('Location: '.$url, true, $status);
             die();
@@ -161,7 +205,14 @@ class core implements i\module {
             if(!$headsentNoDie){
                 die();
             }
-        }
+        } 
+    }
+    
+    public function redirect($path=array(),$status=303,$headsentNoDie=false){
+        $path = implode('/', $path);
+        $path = str_replace(' ', '-', $path);
+        $url = $this->factory()->get_config('home','/') . $path;
+        $this->url_redirect($url, $status, $headsentNoDie);
     }
 
     
@@ -389,6 +440,15 @@ class core implements i\module {
     
     public function add_listener($event,$module,$sub){
         return $this->model()->add_listener($event,$module,$sub);
+    }
+    /**
+     * added 1.0.3
+     * @param string $module
+     * @return bool 
+     */
+    public function module_exists($module){
+        $file = _GNEISS_BASE_PATH_."modules/{$module}";
+        return file_exists($file);
     }
     
 }
