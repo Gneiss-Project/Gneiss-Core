@@ -35,6 +35,12 @@ use modules\core\classes as c;
  *       - core::classes::model::get_tables_status()
  *       - designed for use with the setup module
  *       - factory less assumptive about config files
+ * 1.3.1 - now assumes new format for key table
+ *       - purges old keys on new key and remove key
+ * 1.3.2 - factory now uses optional tables
+ *       - modules can now access module config
+ *       - core::classes::module::get_config($var)
+ *       - module base methods now have doc comments
  */
 class core implements i\module {
     
@@ -87,7 +93,7 @@ class core implements i\module {
         return 'The core of the Gneiss system. Does stuff to make it work.';
     }
     public static function meta_version(){
-        return '1.3.0';
+        return '1.3.2';
     }    
     public static function meta_uses(){
         return array();
@@ -121,7 +127,16 @@ class core implements i\module {
     // 0.7
     
     protected function getListeners($event){
-        return array();
+        try {
+            $l = $this->model()->get_listeners($event); // 1.3.1 went live
+            if($l===FALSE){
+                return array();
+            }
+            return $l;
+        } catch (\Exception $e) {
+            $this->debug()->log('Caught Exception in getListeners for '.$event, $e);
+            return array();
+        }
     }
     
     public function notify($event,&$data){

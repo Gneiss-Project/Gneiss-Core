@@ -117,12 +117,6 @@ class factory extends c\module_lib {
         return $error;
     }
     
-    private function conditional_db_load_CONF(){
-        $loaded_CONF = array();
-        
-        return $loaded_CONF;
-    }
-    
     private function load_CONF(){
         if(!is_array($this->CONF)){
             include $this->get_file_path() . '/config.php';
@@ -138,8 +132,8 @@ class factory extends c\module_lib {
                         include $file;
                     }
                 }
+            $this->CONF = $CONF;
             }
-            $this->CONF = array_merge($this->conditional_db_load_CONF(), $CONF);
         }
     }
     /**
@@ -162,9 +156,22 @@ class factory extends c\module_lib {
         if(isset($this->CONF[$var])){
             return $this->CONF[$var];
         }else{
+            $val = $this->module()->model()->get_config($var);
+            if($val!==FALSE){
+                $default = $val;
+            }
             $this->set_config($var, $default);
             return $this->CONF[$var];
         }
+    }
+    /**
+     * Returns FALSE if config not set or table not ready.
+     * @param string $module
+     * @param string $var
+     * @return mixed 
+     */
+    public function get_module_config($module,$var){
+        return $this->module()->model()->get_module_config($module,$var);
     }
     /**
      *

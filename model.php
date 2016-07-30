@@ -33,6 +33,7 @@ class model extends c\model {
     // Keys
     
     public function store_key($key,$me,$id){
+        $this->purge_old_keys();
         $mysqli = $this->get_mysqli();
         $key    = $mysqli->real_escape_string($key);
         $me     = $mysqli->real_escape_string($me);
@@ -60,8 +61,13 @@ class model extends c\model {
     public function kill_key($key){
         $mysqli = $this->get_mysqli();
         $key    = $mysqli->real_escape_string($key);
-        $query = "DELET FROM `gneiss_keys` WHERE `key`='{$key}' LIMIT 1;";
+        $query = "DELETE FROM `gneiss_keys` WHERE `key`='{$key}' LIMIT 1;";
+        $this->purge_old_keys();
         return $mysqli->query($query);
+    }
+    
+    public function purge_old_keys(){
+        $this->get_mysqli()->query('DELETE FROM `gneiss_keys` WHERE `made` < NOW() - INTERVAL 1 WEEK'); 
     }
     
     // 1.0
@@ -82,7 +88,7 @@ class model extends c\model {
         if(!$this->table_exists('gneiss_modules')){
             return array();
         }
-        $query  = "SELECT `id`, `module`, `order` FROM `gneiss_modules`;";
+        $query  = "SELECT `id`, `module`, `order` FROM `gneiss_modules` ORDER BY `order` DESC;";
         $result = $this->get_mysqli()->query($query);
         $all    = array();
         if($result->num_rows>0){
@@ -128,6 +134,32 @@ class model extends c\model {
         return $this->get_mysqli()->query($query);
     }
     
+    public function get_listeners($event){
+        #return FALSE;
+        if(!$this->table_exists('gneiss_events')){
+            return array();
+        }
+        $query = "SELECT `module`,`sub` FROM `gneiss_events` WHERE `event` = ?;";
+        if ($stmt = $this->get_mysqli()->prepare($query)) {
+            $stmt->bind_param("s", $event);// s/i/d
+            $stmt->execute();
+            $result = array();
+            $stmt->store_result();
+            if($stmt->errno==0 && $stmt->num_rows>1){
+                /* bind result variables */
+                $stmt->bind_result($module, $sub);
+                /* fetch values */
+                while ($stmt->fetch()) {
+                    $result[] = array('module'=>$module,'lib'=>$sub);;
+                }
+            }
+            $stmt->close();
+            return $result;
+        }else{
+            return FALSE;
+        }
+    }
+    
     public function set_config($var,$val){
         if(!$this->table_exists('gneiss_config')){
             return FALSE;
@@ -136,6 +168,28 @@ class model extends c\model {
         $val    = $this->get_mysqli()->real_escape_string($val);
         $query  = "INSERT INTO `gneiss_config` VALUES('{$var}','{$val}');";
         return $this->get_mysqli()->query($query); 
+    }
+    
+    public function get_config($var){
+        #return FALSE;
+        if(!$this->table_exists('gneiss_config')){
+            return FALSE;
+        }
+        $query = "SELECT `val` FROM `gneiss_config` WHERE `var`=? LIMIT 1;";
+        if($stmt = $this->get_mysqli()->prepare($query)){
+            $stmt->bind_param("s", $var);// s/i/d
+            $stmt->execute();
+            $stmt->store_result();
+            if($stmt->errno==0 && $stmt->num_rows>0){
+                $stmt->bind_result($val);
+                $stmt->fetch();
+                $stmt->close();
+                return $val;
+            }
+            return FALSE;
+        }else{
+            return FALSE;
+        }
     }
     
     public function set_module_config($module,$var,$val){
@@ -147,6 +201,28 @@ class model extends c\model {
         $val    = $this->get_mysqli()->real_escape_string($val);
         $query  = "INSERT INTO `gneiss_module_config` VALUES('{$module}','{$var}','{$val}');";
         return $this->get_mysqli()->query($query); 
+    }
+    
+    public function get_module_config($module,$var){
+        #return FALSE;
+        if(!$this->table_exists('gneiss_module_config')){
+            return FALSE;
+        }
+        $query = "SELECT `val` FROM `gneiss_module_config` WHERE `module`=? AND `var`=? LIMIT 1;";
+        if($stmt = $this->get_mysqli()->prepare($query)){
+            $stmt->bind_param("ss", $module,$var);// s/i/d
+            $stmt->execute();
+            $stmt->store_result();
+            if($stmt->errno==0 && $stmt->num_rows>0){
+                $stmt->bind_result($val);
+                $stmt->fetch();
+                $stmt->close();
+                return $val;
+            }
+            return FALSE;
+        }else{
+            return FALSE;
+        }
     }
 }
 
