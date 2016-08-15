@@ -21,12 +21,27 @@ namespace modules\core\classes;
  * @author lordmatt
  */
 abstract class module extends module_lib {
-    
+    /**
+     * Do not call directly. Use $this->module_name()
+     * @var string 
+     */
+    protected $_my_name_is = '';
+    /**
+     * The settings used array. Use $this->get_settings_used()
+     * @var type 
+     */
     protected $settings_used = array();
-    
+    /**
+     * Returns a list of module names used but not depended on by this module
+     * @return array 
+     */
     public static function meta_uses(){
         return array();
     }
+    /**
+     * A list of modules depended on by this module
+     * @return type 
+     */
     public static function meta_depends(){
         return array();
     }
@@ -45,25 +60,52 @@ abstract class module extends module_lib {
         }
         return $controller;
     }
-    
+    /**
+     * A structured array defining permissions this module might test for.
+     * Complex settings should first be defined in 'view' or 'action'.
+     * Assumes: {$module}.[view|action|custom].[custom]
+     * @return array 
+     */
     public static function explicit_user_actions(){
         $actions = array();
         $actions['view']=array('*');
         
         return $actions;
     }
-    
+    /**
+     * Non static access to explicit_user_actions() but can be customised to 
+     * include more details.
+     * @return array 
+     */
     public function list_user_actions(){
         return self::explicit_user_actions();
     }
+    /**
+     * Provides the module's name for factory calls about itself. It may be 
+     * fractionally more efficient to hard code the name but this is not an 
+     * ideal coding practice.
+     * @return string 
+     */
+    protected function module_name(){
+        if(trim($this->_my_name_is)!=''){
+            return $this->_my_name_is;
+        }
+        $childNS = explode('\\',get_class($this));
+        array_pop($childNS); // drop the class name
+        $module = array_pop($childNS);
+        $this->_my_name_is = $module;
+        return $this->_my_name_is;
+    }
+    
     /**
      * Get the module model
      * @return modules\core\classes\model 
      */
     public function model(){
-        $childNS = explode('\\',get_class($this));
-        array_pop($childNS); // drop the class name
-        $module = array_pop($childNS);
+        #$childNS = explode('\\',get_class($this));
+        #array_pop($childNS); // drop the class name
+        #$module = array_pop($childNS);
+        $module = $this->module_name();
         $model = \modules\core\core::get()->factory()->get_module_lib($module,'model');
         return $model;
     }
@@ -77,21 +119,30 @@ abstract class module extends module_lib {
     public function get_config($var){
         $this->load_once_settings();
         $settings = $this->get_settings_used();
-        $childNS = explode('\\',get_class($this));
-        array_pop($childNS); // drop the class name
-        $module = array_pop($childNS);
+        $module = $this->module_name();
         $val = \modules\core\core::get()->factory()->get_module_config($module,$var);
         if($val===FALSE && isset($settings[$var])){
             return $settings[$var][1]; // default value
         }
         if(isset($settings[$var])){
             if($settings[$var][0]=='bool'){
-                $val= (bool) $val;
+                if(strtoupper($val)=='ON'){
+                    $val = TRUE;
+                }elseif(strtoupper($val)=='OFF'){
+                    $val= FALSE;
+                }else{
+                    $val= (bool) $val;
+                }
             }elseif($settings[$var][0]=='int'){
                 $val = (int) $val;
             }
         }
         return $val;
+    }
+    
+    public function set_config($var,$val){
+        $module = $this->module_name();
+        \modules\core\core::get()->factory()->set_module_config($module,$var,$val);
     }
     
     /**
@@ -102,7 +153,7 @@ abstract class module extends module_lib {
         
     }
     /**
-     * Don't over right this method without good reason. Use load_settings for
+     * Don't overwrite this method without good reason. Use load_settings for
      * your config default needs.
      * 
      * @return void 
@@ -117,7 +168,8 @@ abstract class module extends module_lib {
      * Returns the settings used by this module
      * @return array 
      */
-    protected function get_settings_used(){
+    public function get_settings_used(){
+        $this->load_once_settings();
         return $this->settings_used;
     }
     
@@ -166,6 +218,19 @@ abstract class module extends module_lib {
      */
     protected function add_setting_list($what,$default,$list=array()){
         $this->add_setting($what, 'list', $default, $list);
+    }
+    
+    /**
+     * Actions this module needs during install and setup 
+     */
+    public function install(){
+        
+    }
+    /**
+     * actions to cleanly uninstall this module 
+     */
+    public function uninstall(){
+        
     }
     
 }

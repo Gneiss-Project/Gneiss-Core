@@ -23,6 +23,7 @@ namespace modules\core\classes;
 abstract class model {
     
     protected $CONN = 0;
+    protected $table_exists_cache = array();
     
     protected function install(){
         
@@ -39,6 +40,9 @@ abstract class model {
      * @return boolean 
      */
     protected function table_exists($table){
+        if(isset($this->table_exists_cache[$table])){
+            return $this->table_exists_cache[$table];
+        }
         $query="SELECT * FROM information_schema.TABLES WHERE TABLE_NAME = ?;";
         if ($stmt = $this->get_mysqli()->prepare($query)) {
             $stmt->bind_param("s", $table); //This is line 24.
@@ -49,6 +53,7 @@ abstract class model {
                 $result = TRUE;
             }
             $stmt->close();
+            $this->table_exists_cache[$table] = $result;
             return $result;
         }
         #die('CANNOT PREPARE THAT '.$query);

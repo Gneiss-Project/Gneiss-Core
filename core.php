@@ -41,6 +41,9 @@ use modules\core\classes as c;
  *       - modules can now access module config
  *       - core::classes::module::get_config($var)
  *       - module base methods now have doc comments
+ * 1.3.3 - cache added to core::classes::model::table_exists()
+ * 1.3.4 - $this::url() now takes varable arugments
+ *       - fixed a bug in module which caused settings to fail to load
  */
 class core implements i\module {
     
@@ -93,7 +96,7 @@ class core implements i\module {
         return 'The core of the Gneiss system. Does stuff to make it work.';
     }
     public static function meta_version(){
-        return '1.3.2';
+        return '1.3.4';
     }    
     public static function meta_uses(){
         return array();
@@ -168,9 +171,37 @@ class core implements i\module {
             }
         }
     }
-    
-    public function url($module,$specific='',$data=array()){
+    /**
+     * $core->url([$module [, $specific [, array()]]])
+     * $core->url([$module [, $specific [, $string [, $string [, ...]]]]])
+     * 
+     * Takes a variable input and converts it to a valid system URL
+     * 
+     * @param string $module
+     * @param string $specific
+     * @param string $data ...
+     * @return string 
+     */
+    public function url(){
+        // $module,$specific='',$data=array()
+        $args = func_get_args();
         $url = $this->factory()->get_config('home','/');
+        if(count($args)==0){
+            return $url;
+        }
+        if(isset($args[0])){
+            $module=array_shift($args);
+        }
+        if(isset($args[0])){
+            $specific=array_shift($args);
+        }else{
+            $specific='';
+        }
+        if(is_array($args[0])){
+            $data=$args[0];
+        }else{
+            $data=$args;
+        }
         $url .= "{$module}/";
         if($specific!=''){
             $url .= "{$specific}/";

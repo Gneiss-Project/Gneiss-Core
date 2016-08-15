@@ -54,5 +54,12 @@ class database {
         }
         return $this->DB[$n];
     }
+    
+    public function __destruct(){
+        foreach($this->DB as $n=>$db){
+            $db->close();
+            unset($this->DB[$n]);
+        }
+    }
 }
 

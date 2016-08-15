@@ -116,7 +116,7 @@ class model extends c\model {
         $event  = $this->get_mysqli()->real_escape_string($event);
         $module = $this->get_mysqli()->real_escape_string($module);
         $sub    = $this->get_mysqli()->real_escape_string($sub);
-        $query  = "INSERT INTO `gneiss_events` VALUES ('{$event}','{$module}','{$sub}');";
+        $query  = "INSERT INTO `gneiss_events` VALUES ('{$event}','{$module}','{$sub}') ON DUPLICATE KEY UPDATE sub=sub;";
         return $this->get_mysqli()->query($query);
     }
     
@@ -199,7 +199,9 @@ class model extends c\model {
         $module = $this->get_mysqli()->real_escape_string($module);
         $var    = $this->get_mysqli()->real_escape_string($var);
         $val    = $this->get_mysqli()->real_escape_string($val);
-        $query  = "INSERT INTO `gneiss_module_config` VALUES('{$module}','{$var}','{$val}');";
+        $query  = "INSERT INTO `gneiss_module_config` (`module`,`var`,`val`)
+                        VALUES('{$module}','{$var}','{$val}')
+                        ON DUPLICATE KEY UPDATE `val`='{$val}';";
         return $this->get_mysqli()->query($query); 
     }
     
